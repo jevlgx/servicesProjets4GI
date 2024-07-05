@@ -1,0 +1,105 @@
+exemple de valeur pour tester avec postman 
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phoneNumber": "1234567890",
+  "address": "123 Main St",
+  "password": "password123",
+  "role": "driver",
+  "sex": "male",
+  "birthday": "1990-01-01",
+  "emailNotifications": true,
+  "pushNotifications": true,
+  "smsNotifications": true,
+  "experiences": 5,
+  "driverLicense": "DL12345",
+  "interests": "Long drives",
+  "state": "Active",
+  "profile": "Experienced driver",
+  "zones": ["Zone1", "Zone2"],
+  "fueltype": "Petrol",
+  "boxtype": "Manual",
+  "PictureDescription": "Red car",
+  "model": "Civic",
+  "brand": "Honda"
+}
+
+
+
+drop keyspace driver_service;
+CREATE KEYSPACE driver_service WITH replication = {'class': 'NetworkTopologyStrategy','replication_factor': 1};
+
+USE driver_service;
+
+CREATE TABLE IF NOT EXISTS users (
+    userId UUID PRIMARY KEY,
+    name TEXT,
+    email TEXT,
+    phoneNumber TEXT,
+    address TEXT,  
+    password TEXT,
+    role TEXT,
+    sex TEXT,
+    birthday DATE,
+    createdAt TIMESTAMP,
+    updatedAt TIMESTAMP,
+    emailNotifications BOOLEAN,
+    pushNotifications BOOLEAN,
+    smsNotifications BOOLEAN,
+    userPictureUrl TEXT
+);
+
+CREATE TABLE drivers (
+  driverId UUID PRIMARY KEY,
+  userId UUID,
+  vehicleId TEXT,
+  experiences INT,
+  driverLicense TEXT,
+  zones SET<TEXT>,
+  interests TEXT,
+  createdAt TIMESTAMP,
+  updatedAt TIMESTAMP,
+  state TEXT,
+  profile TEXT,
+  cvUrl TEXT  
+);
+
+CREATE TABLE vehicles (
+  vehicleId TEXT PRIMARY KEY,
+  fueltype TEXT, 
+  brand TEXT,
+  model TEXT,
+  boxtype TEXT,
+  PictureDescription TEXT,
+  VehiclePictureUrl TEXT 
+);
+
+
+CREATE INDEX ON drivers (userId);
+
+
+LIRE (PROPOSITION)
+
+Il doit être notifié par le subscription-service en cas de l abbonement/expiration de l abonnement d'un utilisateur.
+En cas de l expiration de l abonnement d'un utilisateur,il devra modifier dans la table drivers, le state de ce conducteur et mettre à inactive.
+ce dernier ne sera plus alors consider comme un driver mais comme un simple utilisateur.
+En cas d'abonnement/renouvellement d'un utilisateur,s'assurer que c'est okay:
+	Si le uerid est dans la table drivers,modifier simplement le state du driver à active
+	Sinon ajouter l occurence de l utilisateur dans la table driver.
+Ce microservice sera regulièrement consulté par les autres microsrvices pour verifier l existence d un utilisateur ou d  un conducteur.
+
+POUR CONSERVER UNIQUEMENT LES SERVICES ET EVITER D AJOUTER UN NOYUVEAU MICROSERVICE POUR GERER LES CRUD DES ANNONCES/PLANNING
+Le Driver Service reçoit toutes les requêtes CUD pour le planning et les annonces provenant de l app frontend.
+Pour les opérations d'écriture (CUD), il effectue les validations nécessaires, puis envoie les modifications au Search Service.
+Dinc il joue juste le role de passerelle pr ces  operations. Il ne recevra aucun read.
+Le Search Service reste responsable de la gestion effective des données dans sa base de données.
+
+
+CREATE TABLE vehicules_picture (
+   vehicle_id UUID,
+   vehicule_picture_id bigint,
+   image_data blob,
+   PRIMARY KEY((vehicle_id ),vehicule_picture_id)
+);
+
+
